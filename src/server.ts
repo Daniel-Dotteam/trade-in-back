@@ -9,14 +9,7 @@ const prisma = new PrismaClient();
 const allowedCors = "*";
 
 var corsOptions = {
-    origin: function (origin: string | undefined, callback: (error: Error | null, allow?: boolean) => void) {
-        if (!origin) return callback(null, true);
-        if (allowedCors.indexOf(origin) === -1) {
-            const msg = `The CORS policy for this site does not allow access from the specified Origin: ${origin}`;
-            return callback(new Error(msg), false);
-        }
-        return callback(null, true);
-    },
+    origin: '*',
     credentials: true,
 };
 
@@ -25,6 +18,17 @@ app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
+
+// Add this before your routes
+app.get('/health', async (_req: any, res: any) => {
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+    res.json({ status: 'ok' });
+  } catch (error : any) {
+    console.error('Health check failed:', error);
+    res.status(500).json({ status: 'error', error: error.message});
+  }
+});
 
 // Import routes with correct paths and extensions
 const routerCollection = require('./routes/collection.routes').default;
