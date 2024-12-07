@@ -26,31 +26,50 @@ model Session {
 }
 
 model Collection {
-  id       String    @id @default(cuid())
-  name     String
-  products Product[]
+  id               String            @id @default(cuid())
+  name             String
+  productSaleTypes ProductSaleType[]
+  productTypes     ProductType[]
+}
+
+model ProductType {
+  id           String     @id @default(cuid())
+  name         String
+  collectionId String
+  products     Product[]
+  collection   Collection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
 }
 
 model Product {
-  id           String      @id @default(cuid())
-  name         String
-  price        Float
-  type         ProductType
-  collectionId String?
-  orders       Order[]
-  collection   Collection? @relation(fields: [collectionId], references: [id])
+  id                                  String          @id @default(cuid())
+  name                                String
+  price                               Float
+  productTypeId                       String
+  type                                ProductSaleType @default(FOR_SALE)
+  Order_Order_saleProductIdToProduct  Order[]         @relation("Order_saleProductIdToProduct")
+  Order_Order_tradeProductIdToProduct Order[]         @relation("Order_tradeProductIdToProduct")
+  productType                         ProductType     @relation(fields: [productTypeId], references: [id], onDelete: Cascade)
 }
 
 model Order {
-  id          String   @id @default(cuid())
-  date        DateTime @default(now())
-  name        String
-  phoneNumber String
-  productId   String
-  product     Product  @relation(fields: [productId], references: [id])
+  id                                    String      @id @default(cuid())
+  date                                  DateTime    @default(now())
+  customerName                          String
+  customerPhone                         String
+  saleProductId                         String?
+  tradeProductId                        String?
+  status                                OrderStatus @default(PENDING)
+  Product_Order_saleProductIdToProduct  Product?    @relation("Order_saleProductIdToProduct", fields: [saleProductId], references: [id])
+  Product_Order_tradeProductIdToProduct Product?    @relation("Order_tradeProductIdToProduct", fields: [tradeProductId], references: [id])
 }
 
-enum ProductType {
+enum ProductSaleType {
   FOR_SALE
   FOR_TRADE
+}
+
+enum OrderStatus {
+  PENDING
+  COMPLETED
+  CANCELLED
 }

@@ -1,18 +1,26 @@
 import express from 'express';
 import { prisma } from '../server';
+import { ProductSaleType } from '@prisma/client';
 
 const router = express.Router();
 
 // Create a product
 router.post('/', async (req, res) => {
   try {
-    const { name, price, type, collectionId } = req.body;
+    const { name, price, type, productTypeId } = req.body;
     const product = await prisma.product.create({
       data: {
         name,
         price,
-        type,
-        collectionId
+        type: type as ProductSaleType,
+        productTypeId
+      },
+      include: {
+        productType: {
+          include: {
+            collection: true
+          }
+        }
       }
     });
     res.json(product);
@@ -27,65 +35,42 @@ router.get('/', async (req, res) => {
     const { type } = req.query;
     const products = await prisma.product.findMany({
       where: type ? {
-        type: type as 'FOR_SALE' | 'FOR_TRADE'
+        type: type as ProductSaleType
       } : undefined,
       include: {
-        collection: true
+        productType: {
+          include: {
+            collection: true
+          }
+        }
       }
     });
     res.json(products);
   } catch (error) {
-    console.error('Error fetching products:', error);
     res.status(400).json({ error: 'Failed to fetch products' });
   }
 });
 
-// Get product by ID
-router.get('/:id', async (req, res) => {
+// Get products by product type
+router.get('/type/:productTypeId', async (req, res) => {
   try {
-    const product = await prisma.product.findUnique({
-      where: { id: req.params.id },
+    const { type } = req.query;
+    const products = await prisma.product.findMany({
+      where: {
+        productTypeId: req.params.productTypeId,
+        ...(type && { type: type as ProductSaleType })
+      },
       include: {
-        collection: true
+        productType: {
+          include: {
+            collection: true
+          }
+        }
       }
     });
-    if (!product) {
-      return res.status(404).json({ error: 'Product not found' });
-    }
-    res.json(product);
+    res.json(products);
   } catch (error) {
-    res.status(400).json({ error: 'Failed to fetch product' });
-  }
-});
-
-// Update product
-router.put('/:id', async (req, res) => {
-  try {
-    const { name, price, type, collectionId } = req.body;
-    const product = await prisma.product.update({
-      where: { id: req.params.id },
-      data: {
-        name,
-        price,
-        type,
-        collectionId
-      }
-    });
-    res.json(product);
-  } catch (error) {
-    res.status(400).json({ error: 'Failed to update product' });
-  }
-});
-
-// Delete product
-router.delete('/:id', async (req, res) => {
-  try {
-    await prisma.product.delete({
-      where: { id: req.params.id }
-    });
-    res.json({ message: 'Product deleted successfully' });
-  } catch (error) {
-    res.status(400).json({ error: 'Failed to delete product' });
+    res.status(400).json({ error: 'Failed to fetch products' });
   }
 });
 

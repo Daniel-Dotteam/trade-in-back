@@ -19,27 +19,28 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
-// Add this before your routes
+// Health check
 app.get('/health', async (_req: any, res: any) => {
   try {
     await prisma.$queryRaw`SELECT 1`;
     res.json({ status: 'ok' });
-  } catch (error : any) {
+  } catch (error: any) {
     console.error('Health check failed:', error);
-    res.status(500).json({ status: 'error', error: error.message});
+    res.status(500).json({ status: 'error', error: error.message });
   }
 });
 
-// Import routes with correct paths and extensions
-const routerCollection = require('./routes/collection.routes').default;
-const routerProduct = require('./routes/product.routes').default;
-const routerOrder = require('./routes/order.routes').default;
+// Import routes
+import collectionRoutes from './routes/collection.routes';
+import productTypeRoutes from './routes/productType.routes';
+import productRoutes from './routes/product.routes';
+import orderRoutes from './routes/order.routes';
 
-// Routes
-app.use('/api/collections', routerCollection);
-app.use('/api/products', routerProduct);
-app.use('/api/orders', routerOrder);
-
+// Use routes
+app.use('/api/collections', collectionRoutes);
+app.use('/api/product-types', productTypeRoutes);
+app.use('/api/products', productRoutes);
+app.use('/api/orders', orderRoutes);
 
 const PORT = process.env.PORT || 3000;
 
